@@ -20,7 +20,8 @@ to quickly create a Cobra application.`,
 		s := internal.NewShell(cmd)
 		err := s.Run()
 		if err != nil {
-			cmd.OutOrStderr().Write([]byte(err.Error()))
+			cmd.OutOrStderr().Write([]byte(err.Error() + "\n"))
+			os.Exit(2)
 		}
 	},
 }

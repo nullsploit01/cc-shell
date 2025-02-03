@@ -42,7 +42,7 @@ func (s *Shell) Run() error {
 			break
 		}
 
-		fmt.Println(command)
+		return fmt.Errorf("No such file or directory (os error 2)")
 	}
 
 	return nil
