@@ -5,12 +5,18 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
-type Shell struct{}
+type Shell struct {
+	cmd *cobra.Command
+}
 
-func NewShell() *Shell {
-	return &Shell{}
+func NewShell(cmd *cobra.Command) *Shell {
+	return &Shell{
+		cmd: cmd,
+	}
 }
 
 func (s *Shell) Run() error {
@@ -30,6 +36,12 @@ func (s *Shell) Run() error {
 		if strings.TrimSpace(command) == "" {
 			continue
 		}
+
+		if strings.Compare(command, "exit") == 0 {
+			s.cmd.Println("Exitting.. Bye!")
+			break
+		}
+
 		fmt.Println(command)
 	}
 
