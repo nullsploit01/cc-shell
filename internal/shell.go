@@ -37,13 +37,44 @@ func (s *Shell) Run() error {
 			continue
 		}
 
-		if strings.Compare(command, "exit") == 0 {
-			s.cmd.Println("Exitting.. Bye!")
-			break
-		}
+		switch command {
+		case "exit":
+			fmt.Println("Exitting.. Bye!")
+			return nil
 
-		return fmt.Errorf("No such file or directory (os error 2)")
+		case "ls":
+			files, err := s.listFiles()
+			if err != nil {
+				return err
+			} else {
+				for _, file := range files {
+					s.cmd.OutOrStdout().Write([]byte(file + " "))
+				}
+				s.cmd.OutOrStdout().Write([]byte("\n"))
+			}
+
+		default:
+			return fmt.Errorf("no such file or directory (os error 2)")
+		}
 	}
 
 	return nil
+}
+
+func (s *Shell) listFiles() ([]string, error) {
+	files, err := os.ReadDir(".")
+	if err != nil {
+		return nil, err
+	}
+
+	var fileList []string
+	for _, file := range files {
+		name := file.Name()
+		if file.IsDir() {
+			name += "/" // Append '/' for directories
+		}
+		fileList = append(fileList, name)
+	}
+
+	return fileList, nil
 }
