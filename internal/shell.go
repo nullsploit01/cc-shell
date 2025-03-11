@@ -53,6 +53,14 @@ func (s *Shell) Run() error {
 				s.cmd.OutOrStdout().Write([]byte("\n"))
 			}
 
+		case "pwd":
+			dir, err := s.getCurrentDir()
+			if err != nil {
+				return err
+			}
+
+			s.cmd.OutOrStdout().Write([]byte(dir + "\n"))
+
 		default:
 			return fmt.Errorf("no such file or directory (os error 2)")
 		}
@@ -77,4 +85,8 @@ func (s *Shell) listFiles() ([]string, error) {
 	}
 
 	return fileList, nil
+}
+
+func (s *Shell) getCurrentDir() (string, error) {
+	return os.Getwd()
 }
