@@ -62,7 +62,7 @@ func (s *Shell) Run() error {
 			s.cmd.OutOrStdout().Write([]byte(dir + "\n"))
 
 		default:
-			return fmt.Errorf("no such file or directory (os error 2)")
+			s.cmd.OutOrStdout().Write([]byte("no such file or directory (os error 2)\n"))
 		}
 	}
 
