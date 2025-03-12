@@ -23,13 +23,13 @@ func (s *Shell) Run() error {
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
-		fmt.Print("> ")
+		s.cmd.OutOrStdout().Write([]byte("> "))
 
 		if !scanner.Scan() {
 			if err := scanner.Err(); err != nil {
-				return fmt.Errorf("failed to read input: %w", err)
+				s.cmd.ErrOrStderr().Write([]byte("failed to read input: " + err.Error() + "\n"))
 			}
-			break
+			continue
 		}
 
 		command := scanner.Text()
@@ -43,13 +43,13 @@ func (s *Shell) Run() error {
 
 		switch cmd {
 		case "exit":
-			fmt.Println("Exitting.. Bye!")
+			s.cmd.OutOrStdout().Write([]byte("Exitting.. Bye!" + "\n"))
 			return nil
 
 		case "ls":
 			files, err := s.listFiles()
 			if err != nil {
-				return err
+				s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
 			} else {
 				for _, file := range files {
 					s.cmd.OutOrStdout().Write([]byte(file + " "))
@@ -60,29 +60,25 @@ func (s *Shell) Run() error {
 		case "pwd":
 			dir, err := s.getCurrentDir()
 			if err != nil {
-				return err
+				s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
 			}
 
 			s.cmd.OutOrStdout().Write([]byte(dir + "\n"))
 
 		case "cd":
 			if len(args) == 0 {
-				return fmt.Errorf("usage: cd <directory>")
+				s.cmd.ErrOrStderr().Write([]byte("usage: cd <directory>" + "\n"))
 			} else {
 				err := s.changeDirectory(args[0])
 				if err != nil {
-					return err
+					s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
 				}
 			}
-
-			continue
 
 		default:
 			s.cmd.OutOrStdout().Write([]byte("no such file or directory (os error 2)\n"))
 		}
 	}
-
-	return nil
 }
 
 func (s *Shell) listFiles() ([]string, error) {
