@@ -37,7 +37,11 @@ func (s *Shell) Run() error {
 			continue
 		}
 
-		switch command {
+		parts := strings.Fields(command)
+		cmd := parts[0]
+		args := parts[1:]
+
+		switch cmd {
 		case "exit":
 			fmt.Println("Exitting.. Bye!")
 			return nil
@@ -60,6 +64,18 @@ func (s *Shell) Run() error {
 			}
 
 			s.cmd.OutOrStdout().Write([]byte(dir + "\n"))
+
+		case "cd":
+			if len(args) == 0 {
+				return fmt.Errorf("usage: cd <directory>")
+			} else {
+				err := s.changeDirectory(args[0])
+				if err != nil {
+					return err
+				}
+			}
+
+			continue
 
 		default:
 			s.cmd.OutOrStdout().Write([]byte("no such file or directory (os error 2)\n"))
@@ -89,4 +105,12 @@ func (s *Shell) listFiles() ([]string, error) {
 
 func (s *Shell) getCurrentDir() (string, error) {
 	return os.Getwd()
+}
+
+func (s *Shell) changeDirectory(path string) error {
+	err := os.Chdir(path)
+	if err != nil {
+		return fmt.Errorf("failed to change directory: %w", err)
+	}
+	return nil
 }
