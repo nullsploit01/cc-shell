@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 
 	"github.com/spf13/cobra"
 )
@@ -20,8 +22,8 @@ func NewShell(cmd *cobra.Command) *Shell {
 }
 
 func (s *Shell) Run() error {
+	s.handleInterrupt()
 	scanner := bufio.NewScanner(os.Stdin)
-
 	for {
 		s.cmd.OutOrStdout().Write([]byte("> "))
 
@@ -79,6 +81,17 @@ func (s *Shell) Run() error {
 			s.cmd.OutOrStdout().Write([]byte("no such file or directory (os error 2)\n"))
 		}
 	}
+}
+
+func (s *Shell) handleInterrupt() {
+	signalChannel := make(chan os.Signal, 1)
+	signal.Notify(signalChannel, syscall.SIGINT)
+
+	go func() {
+		for range signalChannel {
+			s.cmd.OutOrStdout().Write([]byte("\n> "))
+		}
+	}()
 }
 
 func (s *Shell) listFiles() ([]string, error) {
