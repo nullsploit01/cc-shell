@@ -5,20 +5,33 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 
 	"github.com/spf13/cobra"
 )
 
+const historyFile = ".ccshell_history"
+
 type Shell struct {
-	cmd *cobra.Command
+	cmd      *cobra.Command
+	history  []string
+	histPath string
+	prevDir  string
 }
 
 func NewShell(cmd *cobra.Command) *Shell {
-	return &Shell{
-		cmd: cmd,
+	homeDir, _ := os.UserHomeDir()
+	histPath := filepath.Join(homeDir, historyFile)
+
+	shell := &Shell{
+		cmd:      cmd,
+		histPath: histPath,
 	}
+
+	shell.loadHistory()
+	return shell
 }
 
 func (s *Shell) Run() error {
@@ -68,21 +81,7 @@ func (s *Shell) Run() error {
 			s.cmd.OutOrStdout().Write([]byte(dir + "\n"))
 
 		case "cd":
-			var targetDir string
-			if len(args) == 0 || args[0] == "~" {
-				homeDir, err := os.UserHomeDir()
-				if err != nil {
-					s.cmd.ErrOrStderr().Write([]byte("failed to get home directory: " + err.Error() + "\n"))
-					continue
-				}
-				targetDir = homeDir
-			} else {
-				targetDir = args[0]
-			}
-			err := s.changeDirectory(targetDir)
-			if err != nil {
-				s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
-			}
+			s.changeDirectory(args)
 
 		default:
 			s.cmd.OutOrStdout().Write([]byte("no such file or directory (os error 2)\n"))
@@ -99,6 +98,54 @@ func (s *Shell) handleInterrupt() {
 			s.cmd.OutOrStdout().Write([]byte("\n> "))
 		}
 	}()
+}
+
+func (s *Shell) loadHistory() {
+	file, err := os.Open(s.histPath)
+	if err != nil {
+		return
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		s.history = append(s.history, scanner.Text())
+	}
+}
+
+func (s *Shell) changeDirectory(args []string) {
+	var targetDir string
+
+	if len(args) == 0 || args[0] == "~" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			s.cmd.ErrOrStderr().Write([]byte("Failed to get home directory: " + err.Error() + "\n"))
+			return
+		}
+		targetDir = homeDir
+	} else if args[0] == "-" {
+		if s.prevDir == "" {
+			s.cmd.OutOrStdout().Write([]byte("OLDPWD not set\n"))
+			return
+		}
+		targetDir = s.prevDir
+	} else {
+		targetDir = args[0]
+	}
+
+	currDir, err := os.Getwd()
+	if err != nil {
+		s.cmd.ErrOrStderr().Write([]byte("Failed to get current directory: " + err.Error() + "\n"))
+		return
+	}
+
+	err = os.Chdir(targetDir)
+	if err != nil {
+		s.cmd.ErrOrStderr().Write([]byte("Failed to change directory: " + err.Error() + "\n"))
+		return
+	}
+
+	s.prevDir = currDir
 }
 
 func (s *Shell) listFiles() ([]string, error) {
