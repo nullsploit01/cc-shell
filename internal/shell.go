@@ -52,6 +52,10 @@ func (s *Shell) Run() error {
 			continue
 		}
 
+		if command != "history" {
+			s.saveToHistory(command)
+		}
+
 		parts := strings.Fields(command)
 		cmd := parts[0]
 		args := parts[1:]
@@ -70,6 +74,9 @@ func (s *Shell) Run() error {
 		case "cd":
 			s.changeDirectory(args)
 
+		case "history":
+			s.printHistory()
+
 		default:
 			s.cmd.OutOrStdout().Write([]byte("no such file or directory (os error 2)\n"))
 		}
@@ -85,6 +92,24 @@ func (s *Shell) handleInterrupt() {
 			s.cmd.OutOrStdout().Write([]byte("\n> "))
 		}
 	}()
+}
+
+func (s *Shell) saveToHistory(command string) {
+	s.history = append(s.history, command)
+
+	file, err := os.OpenFile(s.histPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		s.cmd.ErrOrStderr().Write([]byte("Failed to save history: " + err.Error() + "\n"))
+		return
+	}
+	defer file.Close()
+	file.WriteString(command + "\n")
+}
+
+func (s *Shell) printHistory() {
+	for i, cmd := range s.history {
+		s.cmd.OutOrStdout().Write(fmt.Appendf(nil, "%d %s\n", i+1, cmd))
+	}
 }
 
 func (s *Shell) printFilesInCurrentDirectory() {
@@ -176,12 +201,4 @@ func (s *Shell) listFiles() ([]string, error) {
 
 func (s *Shell) getCurrentDir() (string, error) {
 	return os.Getwd()
-}
-
-func (s *Shell) changeDirectory(path string) error {
-	err := os.Chdir(path)
-	if err != nil {
-		return fmt.Errorf("failed to change directory: %w", err)
-	}
-	return nil
 }
