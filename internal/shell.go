@@ -62,23 +62,10 @@ func (s *Shell) Run() error {
 			return nil
 
 		case "ls":
-			files, err := s.listFiles()
-			if err != nil {
-				s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
-			} else {
-				for _, file := range files {
-					s.cmd.OutOrStdout().Write([]byte(file + " "))
-				}
-				s.cmd.OutOrStdout().Write([]byte("\n"))
-			}
+			s.printFilesInCurrentDirectory()
 
 		case "pwd":
-			dir, err := s.getCurrentDir()
-			if err != nil {
-				s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
-			}
-
-			s.cmd.OutOrStdout().Write([]byte(dir + "\n"))
+			s.printWorkingDirectory()
 
 		case "cd":
 			s.changeDirectory(args)
@@ -98,6 +85,27 @@ func (s *Shell) handleInterrupt() {
 			s.cmd.OutOrStdout().Write([]byte("\n> "))
 		}
 	}()
+}
+
+func (s *Shell) printFilesInCurrentDirectory() {
+	files, err := s.listFiles()
+	if err != nil {
+		s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
+	} else {
+		for _, file := range files {
+			s.cmd.OutOrStdout().Write([]byte(file + " "))
+		}
+		s.cmd.OutOrStdout().Write([]byte("\n"))
+	}
+}
+
+func (s *Shell) printWorkingDirectory() {
+	dir, err := s.getCurrentDir()
+	if err != nil {
+		s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
+	}
+
+	s.cmd.OutOrStdout().Write([]byte(dir + "\n"))
 }
 
 func (s *Shell) loadHistory() {
