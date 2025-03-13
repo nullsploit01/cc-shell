@@ -68,13 +68,20 @@ func (s *Shell) Run() error {
 			s.cmd.OutOrStdout().Write([]byte(dir + "\n"))
 
 		case "cd":
-			if len(args) == 0 {
-				s.cmd.ErrOrStderr().Write([]byte("usage: cd <directory>" + "\n"))
-			} else {
-				err := s.changeDirectory(args[0])
+			var targetDir string
+			if len(args) == 0 || args[0] == "~" {
+				homeDir, err := os.UserHomeDir()
 				if err != nil {
-					s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
+					s.cmd.ErrOrStderr().Write([]byte("failed to get home directory: " + err.Error() + "\n"))
+					continue
 				}
+				targetDir = homeDir
+			} else {
+				targetDir = args[0]
+			}
+			err := s.changeDirectory(targetDir)
+			if err != nil {
+				s.cmd.ErrOrStderr().Write([]byte(err.Error() + "\n"))
 			}
 
 		default:
