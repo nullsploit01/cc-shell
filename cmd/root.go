@@ -8,20 +8,21 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "ccsh",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Use:   "ccshell",
+	Short: "A minimal custom command-line shell",
+	Long: `CC-Shell is a simple command-line shell built with Go. 
+It supports basic shell operations such as executing commands, 
+navigating directories, maintaining history, and handling keyboard inputs.
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+Features:
+- Execute common commands (ls, pwd, cd, etc.)
+- Persistent command history
+- Support for 'cd -' to switch to the previous directory
+- Graceful Ctrl+C handling`,
 	Run: func(cmd *cobra.Command, args []string) {
 		s := internal.NewShell(cmd)
-		err := s.Run()
-		if err != nil {
-			cmd.OutOrStderr().Write([]byte(err.Error() + "\n"))
-			os.Exit(2)
+		if err := s.Run(); err != nil {
+			cmd.OutOrStderr().Write([]byte("Error: " + err.Error() + "\n"))
 		}
 	},
 }
